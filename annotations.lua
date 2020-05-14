@@ -53,23 +53,20 @@ end
 
 
 local function get_field_type(field)
-	local is_repeated = field.label == 3
-	local postfix = is_repeated and "[]" or ""
-
 	if contains(number_types, field.type) then
-		return "number" .. postfix
+		return "number"
 	end
 
 	if contains(bool_types, field.type) then
-		return "boolean" .. postfix
+		return "boolean"
 	end
 
 	if contains(string_types, field.type) then
-		return "string" .. postfix
+		return "string"
 	end
 
 	if contains(enum_types, field.type) then
-		return "enum" .. postfix
+		return "enum"
 	end
 
 	if contains(message_types, field.type) then
@@ -92,10 +89,12 @@ local function append_fields(fields_data, fields)
 	for i = 1, #fields do
 		local field = fields[i]
 		local field_type = get_field_type(field)
+		local is_repeated = field.label == 3
 		table.insert(fields_data, {
 			name = field.name,
 			field_type = field_type,
-			default = field.default_value
+			default = field.default_value,
+			is_repeated = is_repeated
 		})
 	end
 end
@@ -162,10 +161,17 @@ local function format_annotation_data(files)
 				local field = class_data.fields[k]
 
 				local field_type = field.field_type
+				-- Field type: Map
 				if map_mapping[field_type] then
 					local d = map_mapping[field_type]
 					field_type = "table<" .. d.key .. ", " .. d.value .. ">"
+				else
+					-- Field type: Array of field_type
+					if field.is_repeated then
+						field_type = field_type .. "[]"
+					end
 				end
+
 				local comment = ""
 				if field.default then
 					comment = " Default: " .. field.default
